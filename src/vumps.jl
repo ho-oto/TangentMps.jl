@@ -54,7 +54,6 @@ function vumps_step(
     AR,
     AC,
     C;
-    ishermitian = true,
     tol = KrylovDefaults.tol,
     krylovdim = KrylovDefaults.krylovdim,
     maxiter = KrylovDefaults.maxiter,
@@ -66,7 +65,7 @@ function vumps_step(
         AC,
         1,
         :SR;
-        ishermitian = ishermitian,
+        ishermitian = true,
         tol = tol,
         krylovdim = krylovdim,
         maxiter = maxiter,
@@ -82,7 +81,7 @@ function vumps_step(
         C,
         1,
         :SR;
-        ishermitian = ishermitian,
+        ishermitian = true,
         tol = tol,
         krylovdim = krylovdim,
         maxiter = maxiter,
