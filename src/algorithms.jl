@@ -1,3 +1,56 @@
+"""
+    ibc_left(O, AL, C; kwargs...)
+
+Compute left infinite boundary condition, defined by
+```
+ ----AL-------AL----  |-        ----AL---- -| psudoInv ---
+|    [OOOOOOOOO]      | 1 -         |       |
+ -conj(AL)-conj(AL)-  |-        -conj(AL)- -|          ---
+```
+
+### Return values:
+`ibc, info = ibc_left(O, AL, C)`
+
+### Arguments:
+*   `O`: Hamiltonian (only two-site operator is supported)
+*   `AL`: left-canonical tensor of mixed-canonical uniform MPS representation
+*   `C`: center matrix of mixed-canonical uniform MPS representation
+
+If `O`, `AL` and `C` is `AbstractArray` oblect, nothing have to be done.
+`TangentMps.transfer_from_left(X, O, AL)`,
+`TangentMps.transfer_from_left(X, O, (AL, AL))`,
+`TangentMps.similar_normalized_eye(X)`,
+`Base.*(X, Y)`,
+`Base.*(x::Number, X)`,
+`Base.+(X, Y)`,
+`Base.adjoint(X)`,
+`Base.eltype(X)`,
+`Base.similar(X, [T::Type<:Number])`,
+`Base.fill!(X, α::Number)`,
+`Base.copyto!(X, Y)`,
+`LinearAlgebra.mul!(X, Y, α::Number)`,
+`LinearAlgebra.rmul!(X, α::Number)`,
+`LinearAlgebra.axpy!(α::Number, X, Y)`,
+`LinearAlgebra.axpby!(α::Number, X, β::Number, Y)`,
+`LinearAlgebra.tr(X)`,
+`LinearAlgebra.dot(X,Y)` and
+`LinearAlgebra.norm(X)`
+should be defined where `typeof(X) == typeof(Y) == typeof(C)` is satisfied.
+
+### Keyword arguments:
+Keyword arguments are passed to `KrylovKit.linsolve` used in `ibc_left`.
+*   `atol::Real`: the requested accuracy, i.e. absolute tolerance, on the norm of the
+    residual.
+*   `rtol::Real`: the requested accuracy on the norm of the residual, relative to the norm
+    of the right hand side `b`.
+*   `tol::Real`: the requested accuracy on the norm of the residual which is actually used,
+    but which defaults to `max(atol, rtol*norm(b))`. So either `atol` and `rtol` or directly
+    use `tol` (in which case the value of `atol` and `rtol` will be ignored).
+*   `krylovdim::Integer`: the maximum dimension of the Krylov subspace that will be
+    constructed.
+*   `maxiter::Integer`: the number of times the Krylov subspace can be rebuilt; see below for
+    further details on the algorithms.
+"""
 function ibc_left(
     O,
     AL,
@@ -17,12 +70,65 @@ function ibc_left(
         krylovdim = krylovdim,
         maxiter = maxiter,
     ) do Y
-        Y - transfer_from_left(Y, AL) + tr(C' * Y * C) * eye
+        Y - transfer_from_left(Y, AL) + tr(C' * Y * C) * eye #TODO: replace by in-place operation?
     end
     inf.converged == 1 || @warn "L un-converged"
     ibc, inf
 end
 
+"""
+    ibc_right(O, AR, C; kwargs...)
+
+Compute left infinite boundary condition, defined by
+```
+--- |-        ----AR---- -| psudoInv ----AR-------AR----
+    | 1 -         |       |              [OOOOOOOOO]    |
+--- |-        -conj(AR)- -|          -conj(AR)-conj(AR)-
+```
+
+### Return values:
+`ibc, info = ibc_right(O, AR, C)`
+
+### Arguments:
+*   `O`: Hamiltonian (only two-site operator is supported)
+*   `AR`: right-canonical tensor of mixed-canonical uniform MPS representation
+*   `C`: center matrix of mixed-canonical uniform MPS representation
+
+If `O`, `AR` and `C` is `AbstractArray` oblect, nothing have to be done.
+`TangentMps.transfer_from_right(X, O, AR)`,
+`TangentMps.transfer_from_right(X, O, (AR, AR))`,
+`TangentMps.similar_normalized_eye(X)`,
+`Base.*(X, Y)`,
+`Base.*(x::Number, X)`,
+`Base.+(X, Y)`,
+`Base.adjoint(X)`,
+`Base.eltype(X)`,
+`Base.similar(X, [T::Type<:Number])`,
+`Base.fill!(X, α::Number)`,
+`Base.copyto!(X, Y)`,
+`LinearAlgebra.mul!(X, Y, α::Number)`,
+`LinearAlgebra.rmul!(X, α::Number)`,
+`LinearAlgebra.axpy!(α::Number, X, Y)`,
+`LinearAlgebra.axpby!(α::Number, X, β::Number, Y)`,
+`LinearAlgebra.tr(X)`,
+`LinearAlgebra.dot(X,Y)` and
+`LinearAlgebra.norm(X)`
+should be defined where `typeof(X) == typeof(Y) == typeof(C)` is satisfied.
+
+### Keyword arguments:
+Keyword arguments are passed to `KrylovKit.linsolve` used in `ibc_left`.
+*   `atol::Real`: the requested accuracy, i.e. absolute tolerance, on the norm of the
+    residual.
+*   `rtol::Real`: the requested accuracy on the norm of the residual, relative to the norm
+    of the right hand side `b`.
+*   `tol::Real`: the requested accuracy on the norm of the residual which is actually used,
+    but which defaults to `max(atol, rtol*norm(b))`. So either `atol` and `rtol` or directly
+    use `tol` (in which case the value of `atol` and `rtol` will be ignored).
+*   `krylovdim::Integer`: the maximum dimension of the Krylov subspace that will be
+    constructed.
+*   `maxiter::Integer`: the number of times the Krylov subspace can be rebuilt; see below for
+    further details on the algorithms.
+"""
 function ibc_right(
     O,
     AR,
@@ -42,7 +148,7 @@ function ibc_right(
         krylovdim = krylovdim,
         maxiter = maxiter,
     ) do Y
-        Y - transfer_from_right(Y, AR) + tr(C * Y * C') * eye
+        Y - transfer_from_right(Y, AR) + tr(C * Y * C') * eye #TODO: replace by in-place operation?
     end
     inf.converged == 1 || @warn "R un-converged"
     ibc, inf
@@ -73,7 +179,7 @@ function vumps_step(
         mul_matrix_from_left(X, L) +
         mul_matrix_from_right(X, R) +
         mul_operator_with_left(X, O, AL) +
-        mul_operator_with_right(X, O, AR)
+        mul_operator_with_right(X, O, AR) #TODO: replace by in-place operation?
     end
     inf_AC.converged ≥ 1 || @warn "AC un-converged"
     norm(vec_AC) ≈ 1 && (vec_AC /= norm(vec_AC))
@@ -95,7 +201,7 @@ function vumps_step(
             mul_operator_with_left(Y, O, AL) +
             mul_operator_with_right(Y, O, AR),
             AR,
-        )
+        ) #TODO: replace by in-place operation?
     end
     inf_C.converged ≥ 1 || @warn "C un-converged"
     norm(vec_C) ≈ 1 && (vec_C /= norm(vec_C))
@@ -162,4 +268,3 @@ function tdvp_step(
 
     (AL_, AR_, vec_AC, vec_C), (norm_AC, norm_C), (epl, epr), (inf_L, inf_R, inf_AC, inf_C)
 end
-
