@@ -133,6 +133,8 @@ function tdvp_step(
         mul_operator_with_right(X, O, AR)
     end
     inf_AC.converged == 1 || @warn "AC un-converged"
+    norm_AC = norm(vec_AC)
+    vec_AC /= norm_AC
 
     vec_C, inf_C = exponentiate(
         dt,
@@ -153,10 +155,12 @@ function tdvp_step(
         )
     end
     inf_C.converged == 1 || @warn "C un-converged"
+    norm_C = norm(vec_C)
+    vec_C /= norm_C
 
     (AL_, AR_), (epl, epr) = al_and_ar(vec_AC, vec_C)
 
-    (AL_, AR_, vec_AC, vec_C), (epl, epr), (inf_L, inf_R, inf_AC, inf_C)
+    (AL_, AR_, vec_AC, vec_C), (norm_AC, norm_C), (epl, epr), (inf_L, inf_R, inf_AC, inf_C)
 end
 
 function enlarge_step()
