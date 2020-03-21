@@ -26,3 +26,28 @@ function al_and_ar(AC::AbstractTensor3, C::AbstractMatrix)
 
     (AL, AR), (ϵL, ϵR)
 end
+
+function mixed_canonical(A::Tensor3{T}) where T
+
+    d = size(A, 1)
+
+    (L_val,), (L_vec,), L_inf = eigsolve(randn(T, d, d)) do X
+        transfer_from_left(X, A)
+    end
+    (R_val,), (R_vec,), R_inf = eigsolve(randn(T, d, d)) do X
+        transfer_from_right(X, A)
+    end
+    L_vec .*= sign(sum(L_vec))
+    R_vec .*= sign(sum(R_vec))
+    sqrtL, sqrtR = T.(sqrt(L_vec)), T.(sqrt(R_vec))
+    AL = mul_matrix_from_left(mul_matrix_from_right(A, inv(sqrtL)), sqrtL)
+    AR = mul_matrix_from_right(mul_matrix_from_left(A, inv(sqrtR)), sqrtR)
+    C = sqrtL * sqrtR
+
+    C ./= norm(C)
+    AL ./= norm(mul_matrix_from_right(AL, C))
+    AR ./= norm(mul_matrix_from_left(AR, C))
+    AC = mul_matrix_from_left(AR, C)
+
+    (AL, AR, AC, C)
+end
