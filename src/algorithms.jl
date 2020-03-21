@@ -154,27 +154,51 @@ function ibc_right(
     ibc, inf
 end
 
+"""
+    vumps_step(O, AL, AR, AC, C; kwargs...)
+"""
 function vumps_step(
     O,
     AL,
     AR,
     AC,
     C;
-    tol = KrylovDefaults.tol,
-    krylovdim = KrylovDefaults.krylovdim,
-    maxiter = KrylovDefaults.maxiter,
+    ibc_atol = KrylovDefaults.tol,
+    ibc_rtol = KrylovDefaults.tol,
+    ibc_krylovdim = KrylovDefaults.krylovdim,
+    ibc_maxiter = KrylovDefaults.maxiter,
+    eig_tol = KrylovDefaults.tol,
+    eig_krylovdim = KrylovDefaults.krylovdim,
+    eig_maxiter = KrylovDefaults.maxiter,
 )
 
-    (L, inf_L), (R, inf_R) = ibc_left(O, AL, C), ibc_right(O, AR, C)
+    (L, inf_L) = ibc_left(
+        O,
+        AL,
+        C;
+        atol = ibc_atol,
+        rtol = ibc_rtol,
+        krylovdim = ibc_krylovdim,
+        maxiter = ibc_maxiter,
+    )
+    (R, inf_R) = ibc_right(
+        O,
+        AR,
+        C;
+        atol = ibc_atol,
+        rtol = ibc_rtol,
+        krylovdim = ibc_krylovdim,
+        maxiter = ibc_maxiter,
+    )
 
     (val_AC,), (vec_AC,), inf_AC = eigsolve(
         AC,
         1,
         :SR;
         ishermitian = true,
-        tol = tol,
-        krylovdim = krylovdim,
-        maxiter = maxiter,
+        tol = eig_tol,
+        krylovdim = eig_krylovdim,
+        maxiter = eig_maxiter,
     ) do X
         mul_matrix_from_left(X, L) +
         mul_matrix_from_right(X, R) +
@@ -189,9 +213,9 @@ function vumps_step(
         1,
         :SR;
         ishermitian = true,
-        tol = tol,
-        krylovdim = krylovdim,
-        maxiter = maxiter,
+        tol = eig_tol,
+        krylovdim = eig_krylovdim,
+        maxiter = eig_maxiter,
     ) do X
         Y = mul_matrix_from_left(AR, X)
         transfer_from_right(
@@ -211,6 +235,9 @@ function vumps_step(
     (AL_, AR_, vec_AC, vec_C), (epl, epr), (inf_L, inf_R, inf_AC, inf_C)
 end
 
+"""
+    tdvp_step(O, dt, AL, AR, AC, C; kwargs...)
+"""
 function tdvp_step(
     O,
     dt,
@@ -218,20 +245,41 @@ function tdvp_step(
     AR,
     AC,
     C;
-    ishermitian = true,
-    tol = KrylovDefaults.tol,
-    krylovdim = KrylovDefaults.krylovdim,
-    maxiter = KrylovDefaults.maxiter,
+    ishermitian,
+    ibc_atol = KrylovDefaults.tol,
+    ibc_rtol = KrylovDefaults.tol,
+    ibc_krylovdim = KrylovDefaults.krylovdim,
+    ibc_maxiter = KrylovDefaults.maxiter,
+    eig_tol = KrylovDefaults.tol,
+    eig_krylovdim = KrylovDefaults.krylovdim,
+    eig_maxiter = KrylovDefaults.maxiter,
 )
-    (L, inf_L), (R, inf_R) = ibc_left(O, AL, C), ibc_right(O, AR, C)
+    (L, inf_L) = ibc_left(
+        O,
+        AL,
+        C;
+        atol = ibc_atol,
+        rtol = ibc_rtol,
+        krylovdim = ibc_krylovdim,
+        maxiter = ibc_maxiter,
+    )
+    (R, inf_R) = ibc_right(
+        O,
+        AR,
+        C;
+        atol = ibc_atol,
+        rtol = ibc_rtol,
+        krylovdim = ibc_krylovdim,
+        maxiter = ibc_maxiter,
+    )
 
     vec_AC, inf_AC = exponentiate(
         dt,
         AC;
         ishermitian = ishermitian,
-        tol = tol,
-        krylovdim = krylovdim,
-        maxiter = maxiter,
+        tol = eig_tol,
+        krylovdim = eig_krylovdim,
+        maxiter = eig_maxiter,
     ) do X
         mul_matrix_from_left(X, L) +
         mul_matrix_from_right(X, R) +
@@ -246,9 +294,9 @@ function tdvp_step(
         dt,
         C;
         ishermitian = ishermitian,
-        tol = tol,
-        krylovdim = krylovdim,
-        maxiter = maxiter,
+        tol = eig_tol,
+        krylovdim = eig_krylovdim,
+        maxiter = eig_maxiter,
     ) do X
         Y = mul_matrix_from_left(AR, X)
         transfer_from_right(

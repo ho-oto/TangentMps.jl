@@ -13,6 +13,19 @@ function _matrix_to_tensor(X::AbstractMatrix, lp_r::Bool = true)
     lp_r ? permutedims(reshape(X, d, :, d), (1, 3, 2)) : reshape(X, d, d, :)
 end
 
+"""
+    al_and_ar(AC, C)
+
+Compute {AL, AR} which satisfies `mul_matrix_from_right(AL, C) ≈ AC` and
+`mul_matrix_from_left(AR, C) ≈ AC`
+
+### Return values:
+`(AL, AR), (ϵL, ϵR) = al_and_ar(AC, C)`
+
+where
+`ϵL = norm(mul_matrix_from_right(AL, C) - AC)` and
+`ϵR = norm(mul_matrix_from_left(AR, C) - AC)`
+"""
 function al_and_ar(AC::AbstractTensor3, C::AbstractMatrix)
     AC_Cdag = mul_matrix_from_right(AC, C')
     x, y, z = svd(_tensor_to_matrix(AC_Cdag, true))
@@ -27,6 +40,16 @@ function al_and_ar(AC::AbstractTensor3, C::AbstractMatrix)
     (AL, AR), (ϵL, ϵR)
 end
 
+"""
+    mixed_canonical(A)
+
+convert non-canonical uniform MPS `|Ψ(A)⟩ = ∑ vₗ^† (∏ᵢ A^{sᵢ}) vᵣ |{s}⟩` to
+mixed-canonical uniform MPS
+`|Ψ(AL, AR, AC, C)⟩ = ∑ vₗ^† (∏ᵢ AL^{sᵢ}) AC^{sⱼ} (∏ᵢ AR^{sᵢ}) vᵣ |{s}⟩ = ∑ vₗ^† (∏ᵢ AL^{sᵢ}) C (∏ᵢ AR^{sᵢ}) vᵣ |{s}⟩`
+
+### Return values:
+`AL, AR, AC, C = mixed_canonical(A)`
+"""
 function mixed_canonical(A::Tensor3{T}) where T
 
     d = size(A, 1)
