@@ -26,18 +26,3 @@ function al_and_ar(AC::AbstractTensor3, C::AbstractMatrix)
 
     (AL, AR), (ϵL, ϵR)
 end
-
-function vl_and_vr(AL::AbstractTensor3, AR::AbstractTensor3)
-    P, D = size(AL, 3), size(AL, 2)
-    VL = permutedims(
-        reshape(nullspace(tensor_to_matrix(AL, true)'), D, P, :),
-        (1, 3, 2),
-    )
-    size(VL, 2) == D * (P - 1) || @warn "failed to solve nullspace in VL"
-
-    P, D = size(AR, 3), size(AR, 2)
-    VR = reshape(nullspace(tensor_to_matrix(AR, false))', :, D, P)
-    size(VR, 1) == D * (P - 1) || @warn "failed to solve nullspace in VR"
-
-    (VL, VR)
-end

@@ -14,11 +14,13 @@ export mul_operator_onsite, mul_operator_with_left, mul_operator_with_right
 export sx2, isy2, sz2, sp2, sm2, id2, sx3, isy3, sz3, sp3, sm3, id3
 export blbq
 
+include("algorithms.jl")
+
 include("transfer_matrix.jl")
 include("effective_hamiltonian.jl")
 include("array_functions.jl")
+include("default_operators.jl")
 
-include("vumps.jl")
-include("presets.jl")
+include("bond_enlarge.jl")
 
 end # module
