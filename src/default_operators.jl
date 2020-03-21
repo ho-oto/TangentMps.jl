@@ -1,4 +1,3 @@
-# Spin operators
 const sx2 = [0 0.5; 0.5 0]
 const isy2 = [0 0.5; -0.5 0]
 const sz2 = [0.5 0; 0 -0.5]
