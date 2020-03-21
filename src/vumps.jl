@@ -163,6 +163,36 @@ function tdvp_step(
     (AL_, AR_, vec_AC, vec_C), (norm_AC, norm_C), (epl, epr), (inf_L, inf_R, inf_AC, inf_C)
 end
 
-function enlarge_step()
-    #TODO:
+function enlarge_step(
+    O::AbstractTensor4{U},
+    AL::Tensor3{T},
+    AR::Tensor3{T},
+    AC::Tensor3{T},
+    C::Matrix{T};
+    maxenlarge = size(C, 1) * (size(AC, 3) - 1),
+    ϵ = 0.0,
+) where {T,U}
+
+    V = promote_type(T, U)
+    d, p = size(C, 1), size(AC, 3)
+    VL, VR = vl_and_vr(AL, AR)
+    N = twosite_variance(AL, AR, VL, VR, O)
+    x, y, z = svd(N)
+    enlarge_d = min(sum(y .> ϵ), maxenlarge)
+    enlarge_L = mul_matrix_from_right(VL, x[:, 1:enlarge_d])
+    enlarge_R = mul_matrix_from_left(VR, z[:, 1:enlarge_d]')
+
+    AL_new, AR_new, AC_new, C_new = zeros(V, d + enlarge_d, d + enlarge_d, p),
+    zeros(V, d + enlarge_d, d + enlarge_d, p),
+    zeros(V, d + enlarge_d, d + enlarge_d, p),
+    zeros(V, d + enlarge_d, d + enlarge_d)
+
+    AL_new[1:d, 1:d, :] .= AL
+    AR_new[1:d, 1:d, :] .= AR
+    AC_new[1:d, 1:d, :] .= AC
+    C_new[1:d, 1:d] .= C
+    AL_new[1:d, d+1:end, :] .= enlarge_L
+    AR_new[d+1:end, 1:d, :] .= enlarge_R
+
+    (AL_new, AR_new, AC_new, C_new), (norm(y), norm(y[enlarge_d+1:end]))
 end
