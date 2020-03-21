@@ -76,6 +76,7 @@ function vumps_step(
         mul_operator_with_right(X, O, AR)
     end
     inf_AC.converged ≥ 1 || @warn "AC un-converged"
+    norm(vec_AC) ≈ 1 && vec_AC /= norm(vec_AC)
 
     (val_C,), (vec_C,), inf_C = eigsolve(
         C,
@@ -97,6 +98,7 @@ function vumps_step(
         )
     end
     inf_C.converged ≥ 1 || @warn "C un-converged"
+    norm(vec_C) ≈ 1 && vec_C /= norm(vec_C)
 
     (AL_, AR_), (epl, epr) = al_and_ar(vec_AC, vec_C)
 
