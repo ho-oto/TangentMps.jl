@@ -6,7 +6,7 @@ const AbstractTensor4 = AbstractArray{T,4} where {T}
 const Tensor3 = Array{T,3} where {T}
 const Tensor4 = Array{T,4} where {T}
 
-export ibc_left, ibc_right, vumps_step, tdvp_step, enlarge_step, al_and_ar
+export ibc_left, ibc_right, vumps_step, tdvp_step, enlarge_step, al_and_ar, twosite_variance
 export transfer_from_left, transfer_from_right
 export mul_matrix_from_left, mul_matrix_from_right
 export mul_operator_onsite, mul_operator_with_left, mul_operator_with_right
