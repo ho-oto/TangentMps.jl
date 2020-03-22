@@ -163,6 +163,7 @@ function vumps_step(
     AR,
     AC,
     C;
+    isinvsym::Bool = false,
     ibc_atol = KrylovDefaults.tol,
     ibc_rtol = KrylovDefaults.tol,
     ibc_krylovdim = KrylovDefaults.krylovdim,
@@ -181,7 +182,8 @@ function vumps_step(
         krylovdim = ibc_krylovdim,
         maxiter = ibc_maxiter,
     )
-    (R, inf_R) = ibc_right(
+    (R, inf_R) = isinvsym ? (transpose(L), inf_L) :
+        ibc_right( #TODO: check transpose/conj
         O,
         AR,
         C;
@@ -246,6 +248,7 @@ function tdvp_step(
     AC,
     C;
     ishermitian,
+    isinvsym::Bool = false,
     ibc_atol = KrylovDefaults.tol,
     ibc_rtol = KrylovDefaults.tol,
     ibc_krylovdim = KrylovDefaults.krylovdim,
@@ -263,7 +266,8 @@ function tdvp_step(
         krylovdim = ibc_krylovdim,
         maxiter = ibc_maxiter,
     )
-    (R, inf_R) = ibc_right(
+    (R, inf_R) = isinvsym ? (transpose(L), inf_L) :
+        ibc_right(
         O,
         AR,
         C;
