@@ -16,15 +16,12 @@ function twosite_variance(
     VR::AbstractTensor3,
     O::AbstractTensor4,
 )
-
-    let (_, _l, _r, _blp, _brp, _klp, _krp, _x, _y, _z) = ntuple(x -> nothing, 10)
-        @tensoropt !(_blp, _brp, _klp, _krp) _[_l, _r] :=
-            AL[_x, _y, _klp] *
-            AR[_y, _z, _krp] *
-            conj(VL)[_x, _l, _blp] *
-            conj(VR)[_r, _z, _brp] *
-            O[_blp, _brp, _klp, _krp]
-    end
+    @tensoropt ((blp, brp, klp, krp) = 1, (x, y, z, l, r) = χ) twosite_variance[l, r] :=
+        AL[x, y, klp] *
+        AR[y, z, krp] *
+        conj(VL)[x, l, blp] *
+        conj(VR)[r, z, brp] *
+        O[blp, brp, klp, krp]
 end
 
 

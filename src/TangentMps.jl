@@ -14,6 +14,8 @@ export sx2, isy2, sz2, sp2, sm2, id2, sx3, isy3, sz3, sp3, sm3, id3
 export blbq
 export mixed_canonical
 
+const χ = nothing
+
 include("algorithms.jl")
 
 include("transfer_matrix.jl")

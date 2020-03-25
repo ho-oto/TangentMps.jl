@@ -10,21 +10,16 @@
 ```
 """
 function transfer_from_left(X::AbstractMatrix, A::AbstractTensor3, B::AbstractTensor3 = A)
-
-    let (_, _br, _kr, _bl, _kl, _p) = ntuple(x -> nothing, 6)
-        @tensoropt !(_p) _[_br, _kr] :=
-            X[_bl, _kl] * A[_kl, _kr, _p] * conj(B)[_bl, _br, _p]
-    end
+    @tensoropt (p = 1, (br, kr, bl, kl) = χ) transfer_from_left[br, kr] :=
+        X[bl, kl] * A[kl, kr, p] * conj(B)[bl, br, p]
 end
 function transfer_from_left(
     X::UniformScaling{T},
     A::AbstractTensor3,
     B::AbstractTensor3 = A,
 ) where {T}
-
-    one(T) .* let (_, _br, _kr, _l, _p) = ntuple(x -> nothing, 5)
-        @tensoropt !(_p) _[_br, _kr] := A[_l, _kr, _p] * conj(B)[_l, _br, _p]
-    end
+    @tensoropt !(p = 1, (br, kr, l) = χ) transfer_from_left[br, kr] :=
+        one(T) * A[l, kr, p] * conj(B)[l, br, p]
 end
 function transfer_from_left(
     X::AbstractMatrix,
@@ -32,11 +27,8 @@ function transfer_from_left(
     A::AbstractTensor3,
     B::AbstractTensor3 = A,
 )
-
-    let (_, _br, _kr, _bl, _kl, _bp, _kp) = ntuple(x -> nothing, 7)
-        @tensoropt !(_bp, _kp) _[_br, _kr] :=
-            X[_bl, _kl] * A[_kl, _kr, _kp] * conj(B)[_bl, _br, _bp] * O[_bp, _kp]
-    end
+    @tensoropt ((bp, kp) = 1, (br, kr, bl, kl) = χ) transfer_from_left[br, kr] :=
+        X[bl, kl] * A[kl, kr, kp] * conj(B)[bl, br, bp] * O[bp, kp]
 end
 function transfer_from_left(
     X::UniformScaling{T},
@@ -44,11 +36,8 @@ function transfer_from_left(
     A::AbstractTensor3,
     B::AbstractTensor3 = A,
 ) where {T}
-
-    one(T) .* let (_, _br, _kr, _l, _bp, _kp) = ntuple(x -> nothing, 6)
-        @tensoropt !(_bp, _kp) _[_br, _kr] :=
-            A[_l, _kr, _kp] * conj(B)[_l, _br, _bp] * O[_bp, _kp]
-    end
+    @tensoropt ((bp, kp) = 1, (br, kr, l) = χ) transfer_from_left[br, kr] :=
+        one(T) * A[l, kr, kp] * conj(B)[l, br, bp] * O[bp, kp]
 end
 
 """
@@ -67,31 +56,22 @@ function transfer_from_left(
     A::Tuple{<:AbstractTensor3,<:AbstractTensor3},
     B::Tuple{<:AbstractTensor3,<:AbstractTensor3} = A,
 )
-
     (AL, AR), (BL, BR) = A, B
-    let (_, _br, _kr, _bl, _kl, _b, _k, _lp, _rp) = ntuple(x -> nothing, 9)
-        @tensoropt !(_lp, _rp) _[_br, _kr] :=
-            X[_bl, _kl] *
-            AL[_kl, _k, _lp] *
-            AR[_k, _kr, _rp] *
-            conj(BL)[_bl, _b, _lp] *
-            conj(BR)[_b, _br, _rp]
-    end
+    @tensoropt ((lp, rp) = 1, (br, kr, bl, kl, b, k) = χ) transfer_from_left[br, kr] :=
+        X[bl, kl] *
+        AL[kl, k, lp] *
+        AR[k, kr, rp] *
+        conj(BL)[bl, b, lp] *
+        conj(BR)[b, br, rp]
 end
 function transfer_from_left(
     X::UniformScaling{T},
     A::Tuple{<:AbstractTensor3,<:AbstractTensor3},
     B::Tuple{<:AbstractTensor3,<:AbstractTensor3} = A,
 ) where {T}
-
     (AL, AR), (BL, BR) = A, B
-    one(T) .* let (_, _br, _kr, _l, _b, _k, _lp, _rp) = ntuple(x -> nothing, 8)
-        @tensoropt !(_lp, _rp) _[_br, _kr] :=
-            AL[_l, _k, _lp] *
-            AR[_k, _kr, _rp] *
-            conj(BL)[_l, _b, _lp] *
-            conj(BR)[_b, _br, _rp]
-    end
+    @tensoropt ((lp, rp) = 1, (br, kr, l, b, k) = χ) transfer_from_left[br, kr] :=
+        one(T) * AL[l, k, lp] * AR[k, kr, rp] * conj(BL)[l, b, lp] * conj(BR)[b, br, rp]
 end
 function transfer_from_left(
     X::AbstractMatrix,
@@ -99,17 +79,17 @@ function transfer_from_left(
     A::Tuple{<:AbstractTensor3,<:AbstractTensor3},
     B::Tuple{<:AbstractTensor3,<:AbstractTensor3} = A,
 )
-
     (AL, AR), (BL, BR) = A, B
-    let (_, _br, _kr, _bl, _kl, _b, _k, _blp, _brp, _klp, _krp) = ntuple(x -> nothing, 11)
-        @tensoropt !(_blp, _brp, _klp, _krp) _[_br, _kr] :=
-            X[_bl, _kl] *
-            AL[_kl, _k, _klp] *
-            AR[_k, _kr, _krp] *
-            conj(BL)[_bl, _b, _blp] *
-            conj(BR)[_b, _br, _brp] *
-            O[_blp, _brp, _klp, _krp]
-    end
+    @tensoropt ((blp, brp, klp, krp) = 1, (br, kr, bl, kl, b, k) = χ) transfer_from_left[
+        br,
+        kr,
+    ] :=
+        X[bl, kl] *
+        AL[kl, k, klp] *
+        AR[k, kr, krp] *
+        conj(BL)[bl, b, blp] *
+        conj(BR)[b, br, brp] *
+        O[blp, brp, klp, krp]
 end
 function transfer_from_left(
     X::UniformScaling{T},
@@ -117,17 +97,17 @@ function transfer_from_left(
     A::Tuple{<:AbstractTensor3,<:AbstractTensor3},
     B::Tuple{<:AbstractTensor3,<:AbstractTensor3} = A,
 ) where {T}
-
     (AL, AR), (BL, BR) = A, B
-    one(T) .*
-    let (_, _br, _kr, _l, _b, _k, _blp, _brp, _klp, _krp) = ntuple(x -> nothing, 10)
-        @tensoropt !(_blp, _brp, _klp, _krp) _[_br, _kr] :=
-            AL[_l, _k, _klp] *
-            AR[_k, _kr, _krp] *
-            conj(BL)[_l, _b, _blp] *
-            conj(BR)[_b, _br, _brp] *
-            O[_blp, _brp, _klp, _krp]
-    end
+    @tensoropt ((blp, brp, klp, krp) = 1, (br, kr, l, b, k) = χ) transfer_from_left[
+        br,
+        kr,
+    ] :=
+        one(T) *
+        AL[l, k, klp] *
+        AR[k, kr, krp] *
+        conj(BL)[l, b, blp] *
+        conj(BR)[b, br, brp] *
+        O[blp, brp, klp, krp]
 end
 
 
@@ -143,21 +123,16 @@ end
 ```
 """
 function transfer_from_right(X::AbstractMatrix, A::AbstractTensor3, B::AbstractTensor3 = A)
-
-    let (_, _br, _kr, _bl, _kl, _p) = ntuple(x -> nothing, 6)
-        @tensoropt !(_p) _[_kl, _bl] :=
-            A[_kl, _kr, _p] * conj(B)[_bl, _br, _p] * X[_kr, _br]
-    end
+    @tensoropt (p = 1, (br, kr, bl, kl) = χ) transfer_from_right[kl, bl] :=
+        A[kl, kr, p] * conj(B)[bl, br, p] * X[kr, br]
 end
 function transfer_from_right(
     X::UniformScaling{T},
     A::AbstractTensor3,
     B::AbstractTensor3 = A,
 ) where {T}
-
-    one(T) .* let (_, _r, _bl, _kl, _p) = ntuple(x -> nothing, 5)
-        @tensoropt !(_p) _[_kl, _bl] := A[_kl, _r, _p] * conj(B)[_bl, _r, _p]
-    end
+    @tensoropt (p = 1, (r, bl, kl) = χ) transfer_from_right[kl, bl] :=
+        one(T) * A[kl, r, p] * conj(B)[bl, r, p]
 end
 function transfer_from_right(
     X::AbstractMatrix,
@@ -165,11 +140,8 @@ function transfer_from_right(
     A::AbstractTensor3,
     B::AbstractTensor3 = A,
 )
-
-    let (_, _br, _kr, _bl, _kl, _bp, _kp) = ntuple(x -> nothing, 7)
-        @tensoropt !(_bp, _kp) _[_kl, _bl] :=
-            A[_kl, _kr, _kp] * conj(B)[_bl, _br, _bp] * X[_kr, _br] * O[_bp, _kp]
-    end
+    @tensoropt ((bp, kp) = 1, (br, kr, bl, kl) = χ) transfer_from_right[kl, bl] :=
+        A[kl, kr, kp] * conj(B)[bl, br, bp] * X[kr, br] * O[bp, kp]
 end
 function transfer_from_right(
     X::UniformScaling{T},
@@ -177,11 +149,8 @@ function transfer_from_right(
     A::AbstractTensor3,
     B::AbstractTensor3 = A,
 ) where {T}
-
-    one(T) .* let (_, _r, _bl, _kl, _bp, _kp) = ntuple(x -> nothing, 6)
-        @tensoropt !(_bp, _kp) _[_kl, _bl] :=
-            A[_kl, _r, _kp] * conj(B)[_bl, _r, _bp] * O[_bp, _kp]
-    end
+    @tensoropt ((bp, kp) = 1, (r, bl, kl) = χ) transfer_from_right[kl, bl] :=
+        one(T) * A[kl, r, kp] * conj(B)[bl, r, bp] * O[bp, kp]
 end
 
 """
@@ -200,31 +169,22 @@ function transfer_from_right(
     A::Tuple{<:AbstractTensor3,<:AbstractTensor3},
     B::Tuple{<:AbstractTensor3,<:AbstractTensor3} = A,
 )
-
     (AL, AR), (BL, BR) = A, B
-    let (_, _br, _kr, _bl, _kl, _b, _k, _lp, _rp) = ntuple(x -> nothing, 9)
-        @tensoropt !(_lp, _rp) _[_kl, _bl] :=
-            AL[_kl, _k, _lp] *
-            AR[_k, _kr, _rp] *
-            conj(BL)[_bl, _b, _lp] *
-            conj(BR)[_b, _br, _rp] *
-            X[_kr, _br]
-    end
+    @tensoropt !((lp, rp) = 1, (br, kr, bl, kl, b, k) = χ) transfer_from_right[kl, bl] :=
+        AL[kl, k, lp] *
+        AR[k, kr, rp] *
+        conj(BL)[bl, b, lp] *
+        conj(BR)[b, br, rp] *
+        X[kr, br]
 end
 function transfer_from_right(
     X::UniformScaling{T},
     A::Tuple{<:AbstractTensor3,<:AbstractTensor3},
     B::Tuple{<:AbstractTensor3,<:AbstractTensor3} = A,
 ) where {T}
-
     (AL, AR), (BL, BR) = A, B
-    one(T) .* let (_, _r, _bl, _kl, _b, _k, _lp, _rp) = ntuple(x -> nothing, 8)
-        @tensoropt !(_lp, _rp) _[_kl, _bl] :=
-            AL[_kl, _k, _lp] *
-            AR[_k, _r, _rp] *
-            conj(BL)[_bl, _b, _lp] *
-            conj(BR)[_b, _r, _rp]
-    end
+    @tensoropt ((lp, rp) = 1, (r, bl, kl, b, k) = χ) transfer_from_right[kl, bl] :=
+        one(T) * AL[kl, k, lp] * AR[k, r, rp] * conj(BL)[bl, b, lp] * conj(BR)[b, r, rp]
 end
 function transfer_from_right(
     X::AbstractMatrix,
@@ -232,17 +192,17 @@ function transfer_from_right(
     A::Tuple{<:AbstractTensor3,<:AbstractTensor3},
     B::Tuple{<:AbstractTensor3,<:AbstractTensor3} = A,
 )
-
     (AL, AR), (BL, BR) = A, B
-    let (_, _br, _kr, _bl, _kl, _b, _k, _blp, _brp, _klp, _krp) = ntuple(x -> nothing, 11)
-        @tensoropt !(_blp, _brp, _klp, _krp) _[_kl, _bl] :=
-            AL[_kl, _k, _klp] *
-            AR[_k, _kr, _krp] *
-            conj(BL)[_bl, _b, _blp] *
-            conj(BR)[_b, _br, _brp] *
-            X[_kr, _br] *
-            O[_blp, _brp, _klp, _krp]
-    end
+    @tensoropt ((blp, brp, klp, krp) = 1, (br, kr, bl, kl, b, k) = χ) transfer_from_right[
+        kl,
+        bl,
+    ] :=
+        AL[kl, k, klp] *
+        AR[k, kr, krp] *
+        conj(BL)[bl, b, blp] *
+        conj(BR)[b, br, brp] *
+        X[kr, br] *
+        O[blp, brp, klp, krp]
 end
 function transfer_from_right(
     X::UniformScaling{T},
@@ -252,13 +212,14 @@ function transfer_from_right(
 ) where {T}
 
     (AL, AR), (BL, BR) = A, B
-    one(T) .*
-    let (_, _r, _bl, _kl, _b, _k, _blp, _brp, _klp, _krp) = ntuple(x -> nothing, 10)
-        @tensoropt !(_blp, _brp, _klp, _krp) _[_kl, _bl] :=
-            AL[_kl, _k, _klp] *
-            AR[_k, _r, _krp] *
-            conj(BL)[_bl, _b, _blp] *
-            conj(BR)[_b, _r, _brp] *
-            O[_blp, _brp, _klp, _krp]
-    end
+    @tensoropt ((blp, brp, klp, krp) = 1, (r, bl, kl, b, k) = χ) transfer_from_right[
+        kl,
+        bl,
+    ] :=
+        one(T) *
+        AL[kl, k, klp] *
+        AR[k, r, krp] *
+        conj(BL)[bl, b, blp] *
+        conj(BR)[b, r, brp] *
+        O[blp, brp, klp, krp]
 end
