@@ -14,43 +14,56 @@ function _matrix_to_tensor(X::AbstractMatrix, lp_r::Bool = true)
 end
 
 """
-    al_and_ar(AC, C)
+    al_from_ac_and_c(AC, C)
 
-Compute {AL, AR} which satisfies `mul_matrix_from_right(AL, C) ≈ AC` and
-`mul_matrix_from_left(AR, C) ≈ AC`
+Compute AL which satisfies `mul_matrix_from_right(AL, C) ≈ AC`
 
 ### Return values:
-`(AL, AR), (ϵL, ϵR) = al_and_ar(AC, C)`
+`AL, ϵL = al_from_ac_and_c(AC, C)`
 
 where
-`ϵL = norm(mul_matrix_from_right(AL, C) - AC)` and
-`ϵR = norm(mul_matrix_from_left(AR, C) - AC)`
+`ϵL = norm(mul_matrix_from_right(AL, C) - AC)`
 """
-function al_and_ar(AC::AbstractTensor3, C::AbstractMatrix)
+function al_from_ac_and_c(AC::AbstractTensor3, C::AbstractMatrix)
     AC_Cdag = mul_matrix_from_right(AC, C')
     x, y, z = svd(_tensor_to_matrix(AC_Cdag, true))
     AL = _matrix_to_tensor(x * z', true)
     ϵL = norm(AC - mul_matrix_from_right(AL, C))
 
-    Cdag_AC = mul_matrix_from_left(AC, C')
-    x, y, z = svd(_tensor_to_matrix(AC_Cdag, false))
-    AR = _matrix_to_tensor(x * z', false)
-    ϵR = norm(AC - mul_matrix_from_left(AR, C))
-
-    (AL, AR), (ϵL, ϵR)
+    AL, ϵL
 end
 
 """
-    mixed_canonical(A)
+    ar_from_ac_and_c(AC, C)
+
+Compute AR which satisfies `mul_matrix_from_left(AR, C) ≈ AC`
+
+### Return values:
+`AR, ϵR = ar_from_ac_and_c(AC, C)`
+
+where
+`ϵR = norm(mul_matrix_from_left(AR, C) - AC)`
+"""
+function ar_from_ac_and_c(AC::AbstractTensor3, C::AbstractMatrix)
+    Cdag_AC = mul_matrix_from_left(AC, C')
+    x, y, z = svd(_tensor_to_matrix(Cdag_AC, false))
+    AR = _matrix_to_tensor(x * z', false)
+    ϵR = norm(AC - mul_matrix_from_left(AR, C))
+
+    AR, ϵR
+end
+
+"""
+    mixedcanonical(A)
 
 convert non-canonical uniform MPS `|Ψ(A)⟩ = ∑ vₗ^† (∏ᵢ A^{sᵢ}) vᵣ |{s}⟩` to
 mixed-canonical uniform MPS
 `|Ψ(AL, AR, AC, C)⟩ = ∑ vₗ^† (∏ᵢ AL^{sᵢ}) AC^{sⱼ} (∏ᵢ AR^{sᵢ}) vᵣ |{s}⟩ = ∑ vₗ^† (∏ᵢ AL^{sᵢ}) C (∏ᵢ AR^{sᵢ}) vᵣ |{s}⟩`
 
 ### Return values:
-`AL, AR, AC, C = mixed_canonical(A)`
+`AL, AR, AC, C = mixedcanonical(A)`
 """
-function mixed_canonical(A::Tensor3{T}) where T
+function mixedcanonical(A::Tensor3{T}) where T
 
     d = size(A, 1)
 

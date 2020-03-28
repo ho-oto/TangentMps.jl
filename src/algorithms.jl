@@ -1,5 +1,5 @@
 """
-    ibc_left(O, AL, C; kwargs...)
+    ibcleft(O, AL, C; kwargs...)
 
 Compute left infinite boundary condition, defined by
 ```
@@ -17,7 +17,7 @@ Compute left infinite boundary condition, defined by
 ```
 
 ### Return values:
-`ibc, info = ibc_left(O, AL, C)`
+`ibc, info = ibcleft(O, AL, C)`
 
 ### Arguments:
 *   `O`: Hamiltonian (only two-site operator is supported)
@@ -59,7 +59,7 @@ Keyword arguments are passed to `KrylovKit.linsolve` used in `ibc_left`.
 *   `maxiter::Integer`: the number of times the Krylov subspace can be rebuilt; see below for
     further details on the algorithms.
 """
-function ibc_left(
+function ibcleft(
     O,
     AL,
     C;
@@ -78,14 +78,14 @@ function ibc_left(
         krylovdim = krylovdim,
         maxiter = maxiter,
     ) do Y
-        Y - transfer_from_left(Y, AL) + tr(C' * Y * C) * eye #TODO: replace by in-place operation?
+        Y - transfer_from_left(Y, AL) + tr(C' * Y * C) * eye
     end
     inf.converged == 1 || @warn "L un-converged"
     ibc, inf
 end
 
 """
-    ibc_right(O, AR, C; kwargs...)
+    ibcright(O, AR, C; kwargs...)
 
 Compute left infinite boundary condition, defined by
 ```
@@ -103,7 +103,7 @@ Compute left infinite boundary condition, defined by
 ```
 
 ### Return values:
-`ibc, info = ibc_right(O, AR, C)`
+`ibc, info = ibcright(O, AR, C)`
 
 ### Arguments:
 *   `O`: Hamiltonian (only two-site operator is supported)
@@ -145,7 +145,7 @@ Keyword arguments are passed to `KrylovKit.linsolve` used in `ibc_left`.
 *   `maxiter::Integer`: the number of times the Krylov subspace can be rebuilt; see below for
     further details on the algorithms.
 """
-function ibc_right(
+function ibcright(
     O,
     AR,
     C;
@@ -164,22 +164,103 @@ function ibc_right(
         krylovdim = krylovdim,
         maxiter = maxiter,
     ) do Y
-        Y - transfer_from_right(Y, AR) + tr(C * Y * C') * eye #TODO: replace by in-place operation?
+        Y - transfer_from_right(Y, AR) + tr(C * Y * C') * eye
     end
     inf.converged == 1 || @warn "R un-converged"
     ibc, inf
 end
 
 """
-    vumps_step(O, AL, AR, AC, C; kwargs...)
+    vumpsstep(O, AL, AR, AC, C; kwargs...)
+    vumpsstep(O, AL, AC, C; kwargs...) # with inversion symmetry
+
+### Return values:
+    `(AL, AR, AC, C), (ϵL, ϵR), info = vumpsstep(O, AL, AR, AC, C; kwargs...)`
+    `(AL, AC, C), (ϵL,), info = vumpsstep(O, AL, AC, C; kwargs...)`
 """
-function vumps_step(
+function vumpsstep(
     O,
     AL,
     AR,
     AC,
     C;
-    isinvsym::Bool = false,
+    ibcatol = KrylovDefaults.tol,
+    ibcrtol = KrylovDefaults.tol,
+    ibckrylovdim = KrylovDefaults.krylovdim,
+    ibcmaxiter = KrylovDefaults.maxiter,
+    eigtol = KrylovDefaults.tol,
+    eigkrylovdim = KrylovDefaults.krylovdim,
+    eigmaxiter = KrylovDefaults.maxiter,
+)
+
+    (L, infL) = ibcleft(
+        O,
+        AL,
+        C;
+        atol = ibcatol,
+        rtol = ibcrtol,
+        krylovdim = ibckrylovdim,
+        maxiter = ibcmaxiter,
+    )
+    (R, infR) = ibcright(
+        O,
+        AR,
+        C;
+        atol = ibcatol,
+        rtol = ibcrtol,
+        krylovdim = ibckrylovdim,
+        maxiter = ibcmaxiter,
+    )
+
+    (valAC,), (vecAC,), infAC = eigsolve(
+        AC,
+        1,
+        :SR;
+        ishermitian = true,
+        tol = eigtol,
+        krylovdim = eigkrylovdim,
+        maxiter = eigmaxiter,
+    ) do X
+        mul_matrix_from_left(X, L) +
+        mul_matrix_from_right(X, R) +
+        mul_operator_with_left(X, O, AL) +
+        mul_operator_with_right(X, O, AR)
+    end
+    infAC.converged ≥ 1 || @warn "AC un-converged"
+    norm(vecAC) ≈ 1 && (vecAC /= norm(vecAC))
+
+    (valC,), (vecC,), infC = eigsolve(
+        C,
+        1,
+        :SR;
+        ishermitian = true,
+        tol = eigtol,
+        krylovdim = eigkrylovdim,
+        maxiter = eigmaxiter,
+    ) do X
+        Y = mul_matrix_from_left(AR, X)
+        transfer_from_right(
+            I,
+            mul_matrix_from_left(Y, L) +
+            mul_matrix_from_right(Y, R) +
+            mul_operator_with_left(Y, O, AL) +
+            mul_operator_with_right(Y, O, AR),
+            AR,
+        )
+    end
+    infC.converged ≥ 1 || @warn "C un-converged"
+    norm(vecC) ≈ 1 && (vecC /= norm(vecC))
+
+    AL_, ϵL = al_from_ac_and_c(vecAC, vecC)
+    AR_, ϵR = ar_from_ac_and_c(vecAC, vecC)
+
+    (AL_, AR_, vecAC, vecC), (ϵL, ϵR), (infL, infR, infAC, infC)
+end
+function vumpsstep(
+    O,
+    AL,
+    AC,
+    C;
     ibc_atol = KrylovDefaults.tol,
     ibc_rtol = KrylovDefaults.tol,
     ibc_krylovdim = KrylovDefaults.krylovdim,
@@ -189,7 +270,9 @@ function vumps_step(
     eig_maxiter = KrylovDefaults.maxiter,
 )
 
-    (L, inf_L) = ibc_left(
+    AR = permutedims(AL, (2,1,3))
+
+    (L, infL) = ibcleft(
         O,
         AL,
         C;
@@ -198,18 +281,9 @@ function vumps_step(
         krylovdim = ibc_krylovdim,
         maxiter = ibc_maxiter,
     )
-    (R, inf_R) = isinvsym ? (transpose(L), inf_L) :
-        ibc_right( #TODO: check transpose/conj
-        O,
-        AR,
-        C;
-        atol = ibc_atol,
-        rtol = ibc_rtol,
-        krylovdim = ibc_krylovdim,
-        maxiter = ibc_maxiter,
-    )
+    R = transpose(L)
 
-    (val_AC,), (vec_AC,), inf_AC = eigsolve(
+    (valAC,), (vecAC,), infAC = eigsolve(
         AC,
         1,
         :SR;
@@ -221,12 +295,12 @@ function vumps_step(
         mul_matrix_from_left(X, L) +
         mul_matrix_from_right(X, R) +
         mul_operator_with_left(X, O, AL) +
-        mul_operator_with_right(X, O, AR) #TODO: replace by in-place operation?
+        mul_operator_with_right(X, O, AR)
     end
-    inf_AC.converged ≥ 1 || @warn "AC un-converged"
-    norm(vec_AC) ≈ 1 && (vec_AC /= norm(vec_AC))
+    infAC.converged ≥ 1 || @warn "AC un-converged"
+    norm(vecAC) ≈ 1 && (vecAC /= norm(vecAC))
 
-    (val_C,), (vec_C,), inf_C = eigsolve(
+    (valC,), (vecC,), infC = eigsolve(
         C,
         1,
         :SR;
@@ -243,20 +317,26 @@ function vumps_step(
             mul_operator_with_left(Y, O, AL) +
             mul_operator_with_right(Y, O, AR),
             AR,
-        ) #TODO: replace by in-place operation?
+        )
     end
-    inf_C.converged ≥ 1 || @warn "C un-converged"
-    norm(vec_C) ≈ 1 && (vec_C /= norm(vec_C))
+    infC.converged ≥ 1 || @warn "C un-converged"
+    norm(vecC) ≈ 1 && (vecC /= norm(vecC))
 
-    (AL_, AR_), (epl, epr) = al_and_ar(vec_AC, vec_C)
+    AL_, ϵL = al_from_ac_and_c(vecAC, vecC)
 
-    (AL_, AR_, vec_AC, vec_C), (epl, epr), (inf_L, inf_R, inf_AC, inf_C)
+    (AL_, vecAC, vecC), (ϵL,), (infL, infAC, infC)
 end
 
 """
-    tdvp_step(O, dt, AL, AR, AC, C; kwargs...)
+    tdvpstep(O, dt, AL, AR, AC, C; kwargs...)
+    tdvpstep(O, dt, AL, AC, C; kwargs...) # with inversion symmetry
+
+### Return values:
+    `(AL, AR, AC, C), norm, (ϵL, ϵR), info = tdvpstep(O, AL, AR, AC, C; kwargs...)`
+    `(AL, AC, C), norm, (ϵL,), info = tdvpstep(O, AL, AC, C; kwargs...)`
+where `norm` denotes `|| exp(dt*O)|Ψ(AL, AR, AC, C)⟩ || / || |Ψ(AL, AR, AC, C)⟩ ||`
 """
-function tdvp_step(
+function tdvpstep(
     O,
     dt,
     AL,
@@ -264,7 +344,6 @@ function tdvp_step(
     AC,
     C;
     ishermitian,
-    isinvsym::Bool = false,
     ibc_atol = KrylovDefaults.tol,
     ibc_rtol = KrylovDefaults.tol,
     ibc_krylovdim = KrylovDefaults.krylovdim,
@@ -273,7 +352,7 @@ function tdvp_step(
     eig_krylovdim = KrylovDefaults.krylovdim,
     eig_maxiter = KrylovDefaults.maxiter,
 )
-    (L, inf_L) = ibc_left(
+    (L, infL) = ibcleft(
         O,
         AL,
         C;
@@ -282,8 +361,7 @@ function tdvp_step(
         krylovdim = ibc_krylovdim,
         maxiter = ibc_maxiter,
     )
-    (R, inf_R) = isinvsym ? (transpose(L), inf_L) :
-        ibc_right(
+    (R, infR) = ibcright(
         O,
         AR,
         C;
@@ -293,7 +371,7 @@ function tdvp_step(
         maxiter = ibc_maxiter,
     )
 
-    vec_AC, inf_AC = exponentiate(
+    vecAC, infAC = exponentiate(
         dt,
         AC;
         ishermitian = ishermitian,
@@ -306,11 +384,11 @@ function tdvp_step(
         mul_operator_with_left(X, O, AL) +
         mul_operator_with_right(X, O, AR)
     end
-    inf_AC.converged == 1 || @warn "AC un-converged"
-    norm_AC = norm(vec_AC)
-    vec_AC /= norm_AC
+    infAC.converged == 1 || @warn "AC un-converged"
+    normAC = norm(vecAC)
+    vecAC /= normAC
 
-    vec_C, inf_C = exponentiate(
+    vecC, infC = exponentiate(
         dt,
         C;
         ishermitian = ishermitian,
@@ -328,11 +406,83 @@ function tdvp_step(
             AR,
         )
     end
-    inf_C.converged == 1 || @warn "C un-converged"
-    norm_C = norm(vec_C)
-    vec_C /= norm_C
+    infC.converged == 1 || @warn "C un-converged"
+    normC = norm(vecC)
+    vecC /= normC
 
-    (AL_, AR_), (epl, epr) = al_and_ar(vec_AC, vec_C)
+    AL_, ϵL = al_from_ac_and_c(vecAC, vecC)
+    AR_, ϵR = ar_from_ac_and_c(vecAC, vecC)
 
-    (AL_, AR_, vec_AC, vec_C), (norm_AC, norm_C), (epl, epr), (inf_L, inf_R, inf_AC, inf_C)
+    (AL_, AR_, vecAC, vecC), (normAC, normC), (ϵL, ϵR), (infL, infR, infAC, infC)
+end
+function tdvpstep(
+    O,
+    dt,
+    AL,
+    AC,
+    C;
+    ishermitian,
+    ibc_atol = KrylovDefaults.tol,
+    ibc_rtol = KrylovDefaults.tol,
+    ibc_krylovdim = KrylovDefaults.krylovdim,
+    ibc_maxiter = KrylovDefaults.maxiter,
+    eig_tol = KrylovDefaults.tol,
+    eig_krylovdim = KrylovDefaults.krylovdim,
+    eig_maxiter = KrylovDefaults.maxiter,
+)
+    AR = permutedims(AL, (2,1,3))
+
+    (L, infL) = ibcleft(
+        O,
+        AL,
+        C;
+        atol = ibc_atol,
+        rtol = ibc_rtol,
+        krylovdim = ibc_krylovdim,
+        maxiter = ibc_maxiter,
+    )
+    R = transpose(L)
+
+    vecAC, infAC = exponentiate(
+        dt,
+        AC;
+        ishermitian = ishermitian,
+        tol = eig_tol,
+        krylovdim = eig_krylovdim,
+        maxiter = eig_maxiter,
+    ) do X
+        mul_matrix_from_left(X, L) +
+        mul_matrix_from_right(X, R) +
+        mul_operator_with_left(X, O, AL) +
+        mul_operator_with_right(X, O, AR)
+    end
+    infAC.converged == 1 || @warn "AC un-converged"
+    normAC = norm(vecAC)
+    vecAC /= normAC
+
+    vecC, infC = exponentiate(
+        dt,
+        C;
+        ishermitian = ishermitian,
+        tol = eig_tol,
+        krylovdim = eig_krylovdim,
+        maxiter = eig_maxiter,
+    ) do X
+        Y = mul_matrix_from_left(AR, X)
+        transfer_from_right(
+            I,
+            mul_matrix_from_left(Y, L) +
+            mul_matrix_from_right(Y, R) +
+            mul_operator_with_left(Y, O, AL) +
+            mul_operator_with_right(Y, O, AR),
+            AR,
+        )
+    end
+    infC.converged == 1 || @warn "C un-converged"
+    normC = norm(vecC)
+    vecC /= normC
+
+    AL_, ϵL = al_from_ac_and_c(vecAC, vecC)
+
+    (AL_, vecAC, vecC), (normAC, normC), (ϵL,), (infL, infAC, infC)
 end
