@@ -8,7 +8,8 @@ const Tensor4 = Array{T,4} where {T}
 
 export ibcleft, ibcright, vumpsstep, tdvpstep
 export al_from_ac_and_c, ar_from_ac_and_c
-export enlarge_step, twosite_variance
+export vl_from_al, vr_from_ar
+export enlargestep, twosite_variance
 export transfer_from_left, transfer_from_right
 export mul_matrix_from_left, mul_matrix_from_right
 export mul_operator_onsite, mul_operator_with_left, mul_operator_with_right
