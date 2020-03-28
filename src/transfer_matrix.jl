@@ -18,7 +18,7 @@ function transfer_from_left(
     A::AbstractTensor3,
     B::AbstractTensor3 = A,
 ) where {T}
-    @tensoropt !(p = 1, (br, kr, l) = χ) transfer_from_left[br, kr] :=
+    @tensoropt (p = 1, (br, kr, l) = χ) transfer_from_left[br, kr] :=
         one(T) * A[l, kr, p] * conj(B)[l, br, p]
 end
 function transfer_from_left(
@@ -170,7 +170,7 @@ function transfer_from_right(
     B::Tuple{<:AbstractTensor3,<:AbstractTensor3} = A,
 )
     (AL, AR), (BL, BR) = A, B
-    @tensoropt !((lp, rp) = 1, (br, kr, bl, kl, b, k) = χ) transfer_from_right[kl, bl] :=
+    @tensoropt ((lp, rp) = 1, (br, kr, bl, kl, b, k) = χ) transfer_from_right[kl, bl] :=
         AL[kl, k, lp] *
         AR[k, kr, rp] *
         conj(BL)[bl, b, lp] *
