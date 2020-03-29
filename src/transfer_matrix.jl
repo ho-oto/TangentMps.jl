@@ -2,11 +2,19 @@
     transfer_from_left(X, [O,] A, [B=A])
 
 ```
- -X--A----
-|    O
- -conj(B)-
-          |
-----------
+   Λ
+  ╱ ╲  ┌───────┐
+┌┤ X ├─┤   A   ├──
+│ ╲ ╱  └───┬───┘
+│  V       │
+│         .┴.
+│        ( O )
+│         `┬'
+│          │
+│      ┌───┴───┐
+└──────│conj(B)│─┐
+       └───────┘ │
+─────────────────┘
 ```
 """
 function transfer_from_left(X::AbstractMatrix, A::AbstractTensor3, B::AbstractTensor3 = A)
@@ -44,11 +52,19 @@ end
     transfer_from_left(X, [O,] (AL, AR), [(BL, BR)=(AL, AR)])
 
 ```
- -X--AL-------AR----
-|    [OOOOOOOOO]
- -conj(BL)-conj(BR)-
-                    |
---------------------
+   Λ
+  ╱ ╲  ┌────────┐  ┌────────┐
+┌┤ X ├─┤   AL   ├──┤   AR   ├──
+│ ╲ ╱  └────┬───┘  └────┬───┘
+│  V        │           │
+│          .┴───────────┴.
+│         (       O       )
+│          `┬───────────┬'
+│           │           │
+│      ┌────┴───┐  ┌────┴───┐
+└──────┤conj(BL)├──┤conj(BR)├─┐
+       └────────┘  └────────┘ │
+──────────────────────────────┘
 ```
 """
 function transfer_from_left(
@@ -115,11 +131,19 @@ end
     transfer_from_right(X, [O,] A, [B=A])
 
 ```
------A--X-
-     O    |
- -conj(B)-
-|
- ----------
+              Λ
+  ┌───────┐  ╱ ╲
+──┤   A   ├─┤ X ├─┐
+  └───┬───┘  ╲ ╱  │
+      │       V   │
+     .┴.          │
+    ( O )         │
+     `┬'          │
+      │           │
+  ┌───┴───┐       │
+┌─┤conj(B)├───────┘
+│ └───────┘
+└──────────────────
 ```
 """
 function transfer_from_right(X::AbstractMatrix, A::AbstractTensor3, B::AbstractTensor3 = A)
@@ -157,11 +181,19 @@ end
     transfer_from_right(X, [O,] (AL, AR), [(BL, BR)=(AL, AR)])
 
 ```
------AL-------AR--X-
-     [OOOOOOOOO]    |
- -conj(BL)-conj(BR)-
-|
- --------------------
+                           Λ
+  ┌────────┐  ┌────────┐  ╱ ╲
+──┤   AL   ├──┤   AR   ├─┤ X ├┐
+  └────┬───┘  └────┬───┘  ╲ ╱ │
+       │           │       V  │
+      .┴───────────┴.         │
+     (       O       )        │
+      `┬───────────┬'         │
+       │           │          │
+  ┌────┴───┐  ┌────┴───┐      │
+┌─┤conj(BL)├──┤conj(BR)├──────┘
+│ └────────┘  └────────┘
+└──────────────────────────────
 ```
 """
 function transfer_from_right(

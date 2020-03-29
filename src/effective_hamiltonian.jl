@@ -2,8 +2,10 @@
     mul_matrix_from_left(A, X)
 
 ```
--X-A-
-   |
+  Λ ┌─┐
+─┤X├┤A├─
+  V └┬┘
+     │
 ```
 """
 function mul_matrix_from_left(A::AbstractTensor3, X::AbstractMatrix)
@@ -17,8 +19,10 @@ end
     mul_matrix_from_right(A, X)
 
 ```
--A-X-
- |
+ ┌─┐ Λ
+─┤A├┤X├─
+ └┬┘ V
+  │
 ```
 """
 function mul_matrix_from_right(A::AbstractTensor3, X::AbstractMatrix)
@@ -32,8 +36,13 @@ end
     mul_operator_onsite(A, O)
 
 ```
--A-
- O
+   ┌─┐
+───┤A├───
+   └┬┘
+   .┴.
+  ( O )
+   `┬'
+    │
 ```
 """
 function mul_operator_onsite(A::AbstractTensor3, O::AbstractMatrix)
@@ -47,11 +56,18 @@ end
     mul_operator_with_left(A, O, AL)
 
 ```
- ---AL------A-
-|   [OOOOOOO] |
- conj(AL)-  | |
-          | | |
- ---------  |  -
+ ┌────────┐  ┌─┐
+┌┤   AL   ├──┤A├─┐
+│└────┬───┘  └┬┘ │
+│     │       │  │
+│    .┴───────┴. │
+│   (     O     )│
+│    `┬───────┬' │
+│     │       │  │
+│┌────┴───┐   │  │
+└┤conj(AL)├─┐ │ ┌┘
+ └────────┘ │ │ │
+────────────┘ │ └─
 ```
 """
 function mul_operator_with_left(A::AbstractTensor3, O::AbstractTensor4, AL::AbstractTensor3)
@@ -70,11 +86,18 @@ end
     mul_operator_with_right(A, O, AR)
 
 ```
-  -A------AR----
- | [OOOOOOO]    |
- | |  -conj(AR)-
- | | |
--  |  -----------
+  ┌─┐  ┌────────┐
+┌─┤A├──┤   AR   ├┐
+│ └┬┘  └───┬────┘│
+│  │       │     │
+│ .┴───────┴.    │
+│(     O     )   │
+│ `┬───────┬'    │
+│  │       │     │
+│  │   ┌───┴────┐│
+└┐ │ ┌─┤conj(AR)├┘
+ │ │ │ └────────┘
+─┘ │ └────────────
 ```
 """
 function mul_operator_with_right(
