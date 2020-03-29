@@ -354,7 +354,7 @@ function tdvpstep(
     eig_maxiter = KrylovDefaults.maxiter,
 )
     EO = tr(transfer_from_left(I, O, (AL, AC)))
-    O_ = reshape(reshape(O, size(O, 1)*size(O, 2), :) - EO * I, size(O))
+    O_ = reshape(reshape(O, size(O, 1) * size(O, 2), :) - EO * I, size(O))
 
     (L, infL) = ibcleft(
         O,
@@ -393,7 +393,7 @@ function tdvpstep(
     infAC.converged == 1 || @warn "AC un-converged"
     normAC = norm(vecAC)
     vecAC /= normAC
-    normAC *= exp(dt*EO)
+    normAC *= exp(dt * EO)
 
     vecC, infC = exponentiate(
         dt,
@@ -416,7 +416,7 @@ function tdvpstep(
     infC.converged == 1 || @warn "C un-converged"
     normC = norm(vecC)
     vecC /= normC
-    normC *= exp(dt*EO)
+    normC *= exp(dt * EO)
 
     AL_, ϵL = al_from_ac_and_c(vecAC, vecC)
     AR_, ϵR = ar_from_ac_and_c(vecAC, vecC)
@@ -443,7 +443,7 @@ function tdvpstep(
 )
     AR = permutedims(AL, (2, 1, 3))
     EO = tr(transfer_from_left(I, O, (AL, AC)))
-    O_ = reshape(reshape(O, size(O, 1)*size(O, 2), :) - EO * I, size(O))
+    O_ = reshape(reshape(O, size(O, 1) * size(O, 2), :) - EO * I, size(O))
 
     (L, infL) = ibcleft(
         O_,
@@ -473,7 +473,7 @@ function tdvpstep(
     infAC.converged == 1 || @warn "AC un-converged"
     normAC = norm(vecAC)
     vecAC /= normAC
-    normAC *= exp(dt*EO)
+    normAC *= exp(dt * EO)
 
     vecC, infC = exponentiate(
         dt,
@@ -496,7 +496,7 @@ function tdvpstep(
     infC.converged == 1 || @warn "C un-converged"
     normC = norm(vecC)
     vecC /= normC
-    normC *= exp(dt*EO)
+    normC *= exp(dt * EO)
 
     AL_, ϵL = al_from_ac_and_c(vecAC, vecC)
 

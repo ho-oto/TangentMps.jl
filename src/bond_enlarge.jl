@@ -87,7 +87,7 @@ function enlargestep(
     AL_new[1:d, d+1:end, :] .= enlarge_L
     AR_new[d+1:end, 1:d, :] .= enlarge_R
 
-    (AL_new, AR_new, AC_new, C_new), (norm(y), norm(y[enlarge_d+1:end]))
+    (al = AL_new, ar = AR_new, ac = AC_new, c = C_new), (norm(y), norm(y[enlarge_d+1:end]))
 end
 function enlargestep(
     TV::AbstractMatrix{U},
@@ -116,5 +116,5 @@ function enlargestep(
     C_new[1:d, 1:d] .= C
     AL_new[1:d, d+1:end, :] .= enlarge_L
 
-    (AL_new, AC_new, C_new), (norm(y), norm(y[enlarge_d+1:end]))
+    (al = AL_new, ac = AC_new, c = C_new), (norm(y), norm(y[enlarge_d+1:end]))
 end

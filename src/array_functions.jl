@@ -63,7 +63,7 @@ mixed-canonical uniform MPS
 ### Return values:
 `AL, AR, AC, C = mixedcanonical(A)`
 """
-function mixedcanonical(A::Tensor3{T}) where T
+function mixedcanonical(A::Tensor3{T}) where {T}
 
     d = size(A, 1)
 
