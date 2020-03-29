@@ -353,6 +353,9 @@ function tdvpstep(
     eig_krylovdim = KrylovDefaults.krylovdim,
     eig_maxiter = KrylovDefaults.maxiter,
 )
+    EO = tr(transfer_from_left(I, O, (AL, AC)))
+    O_ = reshape(reshape(O, size(O, 1)*size(O, 2), :) - EO * I, size(O))
+
     (L, infL) = ibcleft(
         O,
         AL,
@@ -371,6 +374,8 @@ function tdvpstep(
         krylovdim = ibc_krylovdim,
         maxiter = ibc_maxiter,
     )
+    L = L - tr(transfer_from_left(L, AC)) * I
+    R = R - tr(transfer_from_right(R, AC)) * I
 
     vecAC, infAC = exponentiate(
         dt,
@@ -388,6 +393,7 @@ function tdvpstep(
     infAC.converged == 1 || @warn "AC un-converged"
     normAC = norm(vecAC)
     vecAC /= normAC
+    normAC *= exp(dt*EO)
 
     vecC, infC = exponentiate(
         dt,
@@ -410,6 +416,7 @@ function tdvpstep(
     infC.converged == 1 || @warn "C un-converged"
     normC = norm(vecC)
     vecC /= normC
+    normC *= exp(dt*EO)
 
     AL_, ϵL = al_from_ac_and_c(vecAC, vecC)
     AR_, ϵR = ar_from_ac_and_c(vecAC, vecC)
@@ -435,9 +442,11 @@ function tdvpstep(
     eig_maxiter = KrylovDefaults.maxiter,
 )
     AR = permutedims(AL, (2, 1, 3))
+    EO = tr(transfer_from_left(I, O, (AL, AC)))
+    O_ = reshape(reshape(O, size(O, 1)*size(O, 2), :) - EO * I, size(O))
 
     (L, infL) = ibcleft(
-        O,
+        O_,
         AL,
         C;
         atol = ibc_atol,
@@ -445,6 +454,7 @@ function tdvpstep(
         krylovdim = ibc_krylovdim,
         maxiter = ibc_maxiter,
     )
+    L = L - tr(transfer_from_left(L, AC)) * I
     R = transpose(L)
 
     vecAC, infAC = exponentiate(
@@ -457,12 +467,13 @@ function tdvpstep(
     ) do X
         mul_matrix_from_left(X, L) +
         mul_matrix_from_right(X, R) +
-        mul_operator_with_left(X, O, AL) +
-        mul_operator_with_right(X, O, AR)
+        mul_operator_with_left(X, O_, AL) +
+        mul_operator_with_right(X, O_, AR)
     end
     infAC.converged == 1 || @warn "AC un-converged"
     normAC = norm(vecAC)
     vecAC /= normAC
+    normAC *= exp(dt*EO)
 
     vecC, infC = exponentiate(
         dt,
@@ -477,14 +488,15 @@ function tdvpstep(
             I,
             mul_matrix_from_left(Y, L) +
             mul_matrix_from_right(Y, R) +
-            mul_operator_with_left(Y, O, AL) +
-            mul_operator_with_right(Y, O, AR),
+            mul_operator_with_left(Y, O_, AL) +
+            mul_operator_with_right(Y, O_, AR),
             AR,
         )
     end
     infC.converged == 1 || @warn "C un-converged"
     normC = norm(vecC)
     vecC /= normC
+    normC *= exp(dt*EO)
 
     AL_, ϵL = al_from_ac_and_c(vecAC, vecC)
 
