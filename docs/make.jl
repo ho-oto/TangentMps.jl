@@ -9,7 +9,6 @@ makedocs(;
     repo="https://github.com/ho-oto/TangentMps.jl/blob/{commit}{path}#L{line}",
     sitename="TangentMps.jl",
     authors="Hayate Nakano",
-    assets=String[],
 )
 
 deploydocs(;
