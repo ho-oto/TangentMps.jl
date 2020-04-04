@@ -10,10 +10,7 @@
 ```
 """
 function mul_matrix_from_left(A::AbstractTensor3, X::AbstractMatrix)
-
-    let (_, _l, _r, _p, _x) = ntuple(x -> nothing, 5)
-        @tensor _[_l, _r, _p] := X[_l, _x] * A[_x, _r, _p]
-    end
+    @tensoropt (p = 1, (l, r, x) = χ) mul_matrix_from_left[l, r, p] := X[l, x] * A[x, r, p]
 end
 
 """
@@ -28,10 +25,7 @@ end
 ```
 """
 function mul_matrix_from_right(A::AbstractTensor3, X::AbstractMatrix)
-
-    let (_, _l, _r, _p, _x) = ntuple(x -> nothing, 5)
-        @tensor _[_l, _r, _p] := A[_l, _x, _p] * X[_x, _r]
-    end
+    @tensoropt (p = 1, (l, r, x) = χ) mul_matrix_from_right[l, r, p] := A[l, x, p] * X[x, r]
 end
 
 """
@@ -50,10 +44,7 @@ end
 ```
 """
 function mul_operator_onsite(A::AbstractTensor3, O::AbstractMatrix)
-
-    let (_, _l, _r, _p, _x) = ntuple(x -> nothing, 5)
-        @tensor _[_l, _r, _p] := A[_l, _r, _x] * O[_p, _x]
-    end
+    @tensoropt ((p, x) = 1, (l, r) = χ) mul_operator_onsite[l, r, p] := A[l, r, x] * O[p, x]
 end
 
 """
@@ -75,15 +66,8 @@ end
 ```
 """
 function mul_operator_with_left(A::AbstractTensor3, O::AbstractTensor4, AL::AbstractTensor3)
-
-    let (_, _l, _r, _blp, _p, _klp, _krp, _x, _y) = ntuple(x -> nothing, 9)
-        @tensoropt !(_blp, _p, _klp, _krp) _[_l, _r, _p] :=
-            conj(AL)[_y, _l, _blp] *
-            AL[_y, _x, _klp] *
-            A[_x, _r, _krp] *
-            O[_blp, _p, _klp, _krp]
-    end
-
+    @tensoropt ((blp, p, klp, krp) = 1, (l, r, x, y) = χ) mul_operator_with_left[l, r, p] :=
+        conj(AL)[y, l, blp] * AL[y, x, klp] * A[x, r, krp] * O[blp, p, klp, krp]
 end
 
 """
@@ -109,12 +93,9 @@ function mul_operator_with_right(
     O::AbstractTensor4,
     AR::AbstractTensor3,
 )
-
-    let (_, _l, _r, _p, _brp, _klp, _krp, _x, _y) = ntuple(x -> nothing, 9)
-        @tensoropt !(_p, _brp, _klp, _krp) _[_l, _r, _p] :=
-            A[_l, _x, _klp] *
-            AR[_x, _y, _krp] *
-            conj(AR)[_r, _y, _brp] *
-            O[_p, _brp, _klp, _krp]
-    end
+    @tensoropt ((p, brp, klp, krp) = 1, (l, r, x, y) = χ) mul_operator_with_right[
+        l,
+        r,
+        p,
+    ] := A[l, x, klp] * AR[x, y, krp] * conj(AR)[r, y, brp] * O[p, brp, klp, krp]
 end
